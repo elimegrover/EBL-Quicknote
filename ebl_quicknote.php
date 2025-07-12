@@ -1,11 +1,47 @@
 <?php
 
 if (@txpinterface == 'admin')
-	{
-		add_privs('eblquicknote', '1');
-		register_tab("extensions", "eblquicknote", "Messaging");
-		register_callback("ebl_quick_note", "eblquicknote");
-	}
+       {
+               add_privs('eblquicknote', '1');
+               register_tab("extensions", "eblquicknote", "Messaging");
+               register_callback("ebl_quick_note", "eblquicknote");
+               register_callback('ebl_quicknote_lifecycle', 'plugin_lifecycle.ebl_quicknote');
+       }
+
+function ebl_quicknote_install()
+{
+       $prefix = PFX;
+
+       $sql = "CREATE TABLE IF NOT EXISTS `{$prefix}ebl_quicknote` (
+               `ID` int(11) NOT NULL AUTO_INCREMENT,
+               `subject` varchar(255) NOT NULL,
+               `content` text NOT NULL,
+               `author_id` varchar(255) NOT NULL,
+               `author_name` varchar(255) NOT NULL,
+               `date` date NOT NULL,
+               PRIMARY KEY (`ID`)
+       ) ENGINE=MyISAM DEFAULT CHARSET=utf8";
+
+       safe_query($sql);
+
+       $sql = "CREATE TABLE IF NOT EXISTS `{$prefix}ebl_quicknote_usermap` (
+               `ID` int(11) NOT NULL AUTO_INCREMENT,
+               `quicknote_id` varchar(255) NOT NULL,
+               `userID` int(255) NOT NULL,
+               `deleted` int(11) NOT NULL DEFAULT 0,
+               `readstatus` int(11) NOT NULL DEFAULT 0,
+               PRIMARY KEY (`ID`)
+       ) ENGINE=MyISAM DEFAULT CHARSET=utf8";
+
+       safe_query($sql);
+}
+
+function ebl_quicknote_lifecycle($event, $step)
+{
+       if ($step === 'installed') {
+               ebl_quicknote_install();
+       }
+}
 		
 switch (gps('event'))
 	{
