@@ -1,18 +1,17 @@
 <?php
 
-if (@txpinterface == 'admin')
-	{
-		add_privs('eblquicknote', '1');
-		register_tab("extensions", "eblquicknote", "Messaging");
-		register_callback("ebl_quick_note", "eblquicknote");
-	}
-		
-switch (gps('event'))
-	{
-		case 'saveNow':
-			saveQuote(); 
-			break;
-	}
+/**
+ * EBL Quicknote
+ *
+ * Internal messaging plugin for Textpattern CMS 4.9+
+ */
+
+if (@txpinterface == 'admin') {
+    add_privs('eblquicknote', '1');
+    register_tab('extensions', 'eblquicknote', 'Messaging');
+    register_callback('ebl_quick_note', 'eblquicknote');
+    register_callback('ebl_quicknote_head', 'admin_side', 'head_end');
+}
 function ebl_quick_note_unreadtotal (){
 	global $txp_user;
 	
@@ -21,24 +20,19 @@ function ebl_quick_note_unreadtotal (){
 	return getCount('ebl_quicknote_usermap', 'userID = '.$user_id.' AND readstatus = 0',0);
 }
 
+function ebl_quicknote_head()
+{
+    echo '<style>.eblquicknote .newMessage td{font-weight:bold;}</style>';
+}
+
 function ebl_quick_note() {
 
-	$step = gps('step');
-	$read = (int)gps('read');
+	$step = ps('step');
+	$read = (int)ps('read');
 	
 	$message = (is_callable($step) ) ? $step() : '';
-	echo pagetop("Messaging", $message);
-	
-	echo n.'<style type="text/css">'.n.
-		'fieldset { padding: 10px 0; border-radius: 20px}'.n.
-		'label { float: left; width: 125px; text-align: right; margin: 0 5px 20px;}'.n.
-		'#eblquicknote_subj, #eblquicknote_body { width: 400px; }'.n.
-		'#eblquicknote_body { height: 150px; }'.n.
-		'legend { margin: 0 0 0 15px; border: 1px solid #EEE; border-radius: 5px; padding: 2px 5px }'.n.
-		'br { clear: both; }'.n.
-		'.newMessage TD { font-weight: bold; font-size: 12px }'.n.
-		'table#listRcvd th, table#listRcvd td { padding: 3px 5px; text-align: left; border-bottom: 1px solid #ddd;}'.n.		
-		'</style>'.n;
+    echo pagetop('Messaging', $message);
+    echo '<div class="eblquicknote">';
 
 	echo n.n.t.t.'<script type="text/javascript">
 		$(document).ready(function() { // init everything
@@ -71,6 +65,7 @@ function ebl_quick_note() {
 	} else {
 		echo ebl_quick_note_MainUI();
 	}
+    echo "</div>";
 }
 
 
@@ -105,7 +100,7 @@ function ebl_sendnewmsg () {
 	
 	extract(safe_row('user_id','txp_users','name = "'.$txp_user.'"')); 
 	
-	extract(gpsa(
+	extract(psa(
 		array(
 			'eblquicknote_subj',
 			'eblquicknote_body',
@@ -320,8 +315,8 @@ function ebl_quick_note_ReadUI($ID) {
 function ebl_delmsg() {
 	global $txp_user;
 	
-	$ID   = gps('ID');
-	$type = gps('type');
+	$ID   = ps('ID');
+	$type = ps('type');
 	
 	if($type == 'sent') {
 		$rs = @safe_delete('ebl_quicknote','ID = '.$ID);
