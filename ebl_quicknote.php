@@ -14,6 +14,23 @@ if (@txpinterface == 'admin')
                register_callback('ebl_quicknote_lifecycle', 'plugin_lifecycle.ebl_quicknote');
        }
 
+function ebl_quicknote_ensure_installed() {
+    static $checked = false;
+    
+    if (!$checked) {
+        $prefix = PFX;
+        
+        // Quick check - if main table exists, we're good
+        $result = safe_query("SHOW TABLES LIKE '{$prefix}ebl_quicknote'");
+        
+        if (!$result || !mysqli_num_rows($result)) {
+            ebl_quicknote_install();
+        }
+        
+        $checked = true;
+    }
+}
+
 function ebl_quicknote_install()
 {
        $prefix = PFX;
@@ -42,11 +59,22 @@ function ebl_quicknote_install()
        safe_query($sql);
 }
 
+function ebl_quicknote_uninstall() {
+    $prefix = PFX;
+    safe_query("DROP TABLE IF EXISTS `{$prefix}ebl_quicknote`");
+    safe_query("DROP TABLE IF EXISTS `{$prefix}ebl_quicknote_usermap`");
+}
+
 function ebl_quicknote_lifecycle($event, $step)
 {
-       if ($step === 'installed') {
-               ebl_quicknote_install();
-       }
+    switch ($step) {
+        case 'installed':
+            // Don't auto-install here - let the lazy loading handle it
+            break;
+        case 'deleted':
+            ebl_quicknote_uninstall();
+            break;
+    }
 }
 		
 switch (gps('event'))
@@ -59,6 +87,8 @@ switch (gps('event'))
 function ebl_quick_note_unreadtotal (){
 	global $txp_user;
 	
+	ebl_quicknote_ensure_installed();
+	
 	extract(safe_row('user_id','txp_users','name = "'.$txp_user.'"'));
 
 	return getCount('ebl_quicknote_usermap', 'userID = '.$user_id.' AND readstatus = 0',0);
@@ -70,6 +100,8 @@ function ebl_quicknote_head()
 }
 
 function ebl_quick_note() {
+
+	ebl_quicknote_ensure_installed();
 
 	$step = ps('step');
 	$read = (int)ps('read');
